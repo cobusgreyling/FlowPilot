@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200" width="600" height="200">
+  <defs>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563EB"/>
+      <stop offset="100%" style="stop-color:#0EA5E9"/>
+    </linearGradient>
+    <linearGradient id="planeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#2563EB"/>
+      <stop offset="100%" style="stop-color:#06B6D4"/>
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#2563EB" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Flow nodes and path -->
+  <g filter="url(#shadow)">
+    <!-- Flow line connecting nodes -->
+    <path d="M 30 100 Q 55 60, 80 80 T 130 70" stroke="url(#blueGrad)" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+
+    <!-- Node 1 -->
+    <circle cx="30" cy="100" r="6" fill="#2563EB" opacity="0.6"/>
+    <!-- Node 2 -->
+    <circle cx="80" cy="80" r="5" fill="#2563EB" opacity="0.4"/>
+
+    <!-- Paper airplane / pilot icon -->
+    <g transform="translate(95, 55) rotate(-15)">
+      <!-- Main airplane body -->
+      <polygon points="0,25 55,-2 55,18 12,22" fill="url(#planeGrad)" opacity="0.95"/>
+      <!-- Wing -->
+      <polygon points="0,25 55,18 40,35 10,30" fill="#0EA5E9" opacity="0.8"/>
+      <!-- Accent line -->
+      <line x1="15" y1="23" x2="50" y2="14" stroke="white" stroke-width="1.5" opacity="0.5" stroke-linecap="round"/>
+    </g>
+
+    <!-- Trailing flow dots -->
+    <circle cx="42" cy="92" r="3" fill="#06B6D4" opacity="0.3"/>
+    <circle cx="58" cy="85" r="2.5" fill="#06B6D4" opacity="0.25"/>
+  </g>
+
+  <!-- Text: FlowPilot -->
+  <g transform="translate(170, 120)">
+    <!-- "Flow" in bold -->
+    <text font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif"
+          font-size="58" font-weight="700" fill="#0F172A" letter-spacing="-1">
+      Flow
+    </text>
+    <!-- "Pilot" in lighter weight -->
+    <text x="143" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif"
+          font-size="58" font-weight="400" fill="url(#blueGrad)" letter-spacing="-1">
+      Pilot
+    </text>
+  </g>
+
+  <!-- Tagline -->
+  <text x="172" y="148" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif"
+        font-size="14" font-weight="400" fill="#64748B" letter-spacing="3">
+    AI-POWERED WORKFLOW AUTOMATION
+  </text>
+</svg>
