@@ -1,0 +1,43 @@
+{
+  "id": "tpl-004",
+  "name": "Email to Slack Forwarder",
+  "description": "Check inbox for new emails, classify priority, and forward important ones to Slack",
+  "trigger": {
+    "type": "cron",
+    "config": {"schedule": "*/15 * * * *"}
+  },
+  "nodes": [
+    {
+      "id": "step_1",
+      "name": "Check inbox",
+      "connector": "email",
+      "action": "read_inbox",
+      "config": {"limit": 5, "unseen_only": true},
+      "depends_on": []
+    },
+    {
+      "id": "step_2",
+      "name": "Classify priority",
+      "connector": "ai",
+      "action": "classify",
+      "config": {"categories": ["urgent", "important", "low_priority"]},
+      "depends_on": ["step_1"]
+    },
+    {
+      "id": "step_3",
+      "name": "Format notification",
+      "connector": "transform",
+      "action": "format_template",
+      "config": {"template": "📧 New email — Priority: {{step_2}}\n\nFrom: {{step_1}}"},
+      "depends_on": ["step_1", "step_2"]
+    },
+    {
+      "id": "step_4",
+      "name": "Post to Slack",
+      "connector": "slack",
+      "action": "send_message",
+      "config": {"channel": "#inbox"},
+      "depends_on": ["step_3"]
+    }
+  ]
+}

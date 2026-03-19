@@ -1,0 +1,35 @@
+{
+  "id": "tpl-007",
+  "name": "Content Moderation Pipeline",
+  "description": "Receive content via webhook, classify it, and route based on result",
+  "trigger": {
+    "type": "webhook",
+    "config": {"source": "cms", "event": "content.submitted"}
+  },
+  "nodes": [
+    {
+      "id": "step_1",
+      "name": "Classify content",
+      "connector": "ai",
+      "action": "classify",
+      "config": {"categories": ["safe", "review_needed", "blocked"]},
+      "depends_on": []
+    },
+    {
+      "id": "step_2",
+      "name": "Generate moderation report",
+      "connector": "ai",
+      "action": "extract",
+      "config": {"fields": ["category", "confidence", "flagged_content", "reason"]},
+      "depends_on": ["step_1"]
+    },
+    {
+      "id": "step_3",
+      "name": "Notify moderation team",
+      "connector": "slack",
+      "action": "send_message",
+      "config": {"channel": "#moderation"},
+      "depends_on": ["step_2"]
+    }
+  ]
+}

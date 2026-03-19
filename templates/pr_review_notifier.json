@@ -1,0 +1,43 @@
+{
+  "id": "tpl-003",
+  "name": "PR Review Notifier",
+  "description": "When a new PR is opened, AI-review the changes and comment on the PR",
+  "trigger": {
+    "type": "webhook",
+    "config": {"source": "github", "event": "pull_request.opened"}
+  },
+  "nodes": [
+    {
+      "id": "step_1",
+      "name": "Fetch PR details",
+      "connector": "github",
+      "action": "get_pull_requests",
+      "config": {"repo": "owner/repo", "state": "open"},
+      "depends_on": []
+    },
+    {
+      "id": "step_2",
+      "name": "AI code review",
+      "connector": "ai",
+      "action": "generate",
+      "config": {"prompt": "Review this pull request for code quality, potential bugs, and security issues. Be concise."},
+      "depends_on": ["step_1"]
+    },
+    {
+      "id": "step_3",
+      "name": "Post review comment",
+      "connector": "github",
+      "action": "create_comment",
+      "config": {"repo": "owner/repo", "issue_number": 1},
+      "depends_on": ["step_2"]
+    },
+    {
+      "id": "step_4",
+      "name": "Notify team on Slack",
+      "connector": "slack",
+      "action": "send_message",
+      "config": {"channel": "#code-review"},
+      "depends_on": ["step_2"]
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "id": "tpl-005",
+  "name": "API Data Pipeline",
+  "description": "Fetch data from an API, transform it, and store the results",
+  "trigger": {
+    "type": "cron",
+    "config": {"schedule": "0 */6 * * *"}
+  },
+  "nodes": [
+    {
+      "id": "step_1",
+      "name": "Fetch source data",
+      "connector": "http",
+      "action": "get",
+      "config": {"url": "https://api.example.com/data"},
+      "depends_on": []
+    },
+    {
+      "id": "step_2",
+      "name": "Extract key fields",
+      "connector": "transform",
+      "action": "extract_field",
+      "config": {"input_key": "step_1", "path": "data.items"},
+      "depends_on": ["step_1"]
+    },
+    {
+      "id": "step_3",
+      "name": "Filter active records",
+      "connector": "transform",
+      "action": "filter",
+      "config": {"input_key": "step_2", "field": "status", "operator": "equals", "value": "active"},
+      "depends_on": ["step_2"]
+    },
+    {
+      "id": "step_4",
+      "name": "AI analysis",
+      "connector": "ai",
+      "action": "extract",
+      "config": {"fields": ["trends", "anomalies", "summary"]},
+      "depends_on": ["step_3"]
+    },
+    {
+      "id": "step_5",
+      "name": "Send results to API",
+      "connector": "http",
+      "action": "post",
+      "config": {"url": "https://api.example.com/reports"},
+      "depends_on": ["step_4"]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "id": "tpl-002",
+  "name": "Daily News Digest",
+  "description": "Fetch top Hacker News stories every morning and send a digest to Slack",
+  "trigger": {
+    "type": "cron",
+    "config": {"schedule": "0 9 * * *"}
+  },
+  "nodes": [
+    {
+      "id": "step_1",
+      "name": "Fetch top HN stories",
+      "connector": "http",
+      "action": "get",
+      "config": {"url": "https://hacker-news.firebaseio.com/v0/topstories.json", "limit": 5},
+      "depends_on": []
+    },
+    {
+      "id": "step_2",
+      "name": "Format digest",
+      "connector": "ai",
+      "action": "summarise",
+      "config": {"prompt": "Format these stories as a brief morning digest with titles and one-line summaries"},
+      "depends_on": ["step_1"]
+    },
+    {
+      "id": "step_3",
+      "name": "Post to Slack",
+      "connector": "slack",
+      "action": "send_message",
+      "config": {"channel": "#news"},
+      "depends_on": ["step_2"]
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "id": "tpl-008",
+  "name": "Customer Feedback Processor",
+  "description": "Collect feedback from API, analyse sentiment, and route to appropriate team",
+  "trigger": {
+    "type": "cron",
+    "config": {"schedule": "0 8 * * *"}
+  },
+  "nodes": [
+    {
+      "id": "step_1",
+      "name": "Fetch feedback submissions",
+      "connector": "http",
+      "action": "get",
+      "config": {"url": "https://api.example.com/feedback?status=new"},
+      "depends_on": []
+    },
+    {
+      "id": "step_2",
+      "name": "Analyse sentiment",
+      "connector": "ai",
+      "action": "classify",
+      "config": {"categories": ["positive", "negative", "neutral", "urgent"]},
+      "depends_on": ["step_1"]
+    },
+    {
+      "id": "step_3",
+      "name": "Extract action items",
+      "connector": "ai",
+      "action": "extract",
+      "config": {"fields": ["issue_type", "product_area", "suggested_action"]},
+      "depends_on": ["step_1"]
+    },
+    {
+      "id": "step_4",
+      "name": "Format report",
+      "connector": "transform",
+      "action": "format_template",
+      "config": {"template": "📊 Daily Feedback Report\n\nSentiment: {{step_2}}\n\nAction Items: {{step_3}}"},
+      "depends_on": ["step_2", "step_3"]
+    },
+    {
+      "id": "step_5",
+      "name": "Post to product team",
+      "connector": "slack",
+      "action": "send_message",
+      "config": {"channel": "#product-feedback"},
+      "depends_on": ["step_4"]
+    }
+  ]
+}

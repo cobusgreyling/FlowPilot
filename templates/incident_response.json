@@ -1,0 +1,43 @@
+{
+  "id": "tpl-006",
+  "name": "Incident Response",
+  "description": "When a webhook fires, classify severity, notify Slack, and create a GitHub issue",
+  "trigger": {
+    "type": "webhook",
+    "config": {"source": "monitoring", "event": "alert.fired"}
+  },
+  "nodes": [
+    {
+      "id": "step_1",
+      "name": "Classify incident severity",
+      "connector": "ai",
+      "action": "classify",
+      "config": {"categories": ["critical", "high", "medium", "low"]},
+      "depends_on": []
+    },
+    {
+      "id": "step_2",
+      "name": "Create GitHub issue",
+      "connector": "github",
+      "action": "create_issue",
+      "config": {"repo": "owner/repo", "title": "Incident alert"},
+      "depends_on": ["step_1"]
+    },
+    {
+      "id": "step_3",
+      "name": "Notify on-call in Slack",
+      "connector": "slack",
+      "action": "send_message",
+      "config": {"channel": "#oncall"},
+      "depends_on": ["step_1"]
+    },
+    {
+      "id": "step_4",
+      "name": "Send email to incident lead",
+      "connector": "email",
+      "action": "send_email",
+      "config": {"to": "oncall@company.com", "subject": "Incident Alert"},
+      "depends_on": ["step_1"]
+    }
+  ]
+}

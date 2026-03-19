@@ -1,0 +1,51 @@
+{
+  "id": "tpl-009",
+  "name": "Weekly Status Report",
+  "description": "Every Monday, gather GitHub activity and generate a team status report",
+  "trigger": {
+    "type": "cron",
+    "config": {"schedule": "0 9 * * 1"}
+  },
+  "nodes": [
+    {
+      "id": "step_1",
+      "name": "Fetch closed issues",
+      "connector": "github",
+      "action": "get_issues",
+      "config": {"repo": "owner/repo", "state": "closed"},
+      "depends_on": []
+    },
+    {
+      "id": "step_2",
+      "name": "Fetch merged PRs",
+      "connector": "github",
+      "action": "get_pull_requests",
+      "config": {"repo": "owner/repo", "state": "closed"},
+      "depends_on": []
+    },
+    {
+      "id": "step_3",
+      "name": "Generate weekly summary",
+      "connector": "ai",
+      "action": "generate",
+      "config": {"prompt": "Generate a concise weekly engineering status report from these GitHub issues and PRs. Include accomplishments, ongoing work, and blockers."},
+      "depends_on": ["step_1", "step_2"]
+    },
+    {
+      "id": "step_4",
+      "name": "Post to Slack",
+      "connector": "slack",
+      "action": "send_message",
+      "config": {"channel": "#team-updates"},
+      "depends_on": ["step_3"]
+    },
+    {
+      "id": "step_5",
+      "name": "Email to stakeholders",
+      "connector": "email",
+      "action": "send_email",
+      "config": {"to": "team-lead@company.com", "subject": "Weekly Engineering Report"},
+      "depends_on": ["step_3"]
+    }
+  ]
+}

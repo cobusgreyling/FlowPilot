@@ -1,0 +1,35 @@
+{
+  "id": "tpl-001",
+  "name": "GitHub Issues to Slack",
+  "description": "Fetch new GitHub issues, summarise with AI, and post to Slack",
+  "trigger": {
+    "type": "webhook",
+    "config": {"source": "github", "event": "issues.opened"}
+  },
+  "nodes": [
+    {
+      "id": "step_1",
+      "name": "Fetch issue details",
+      "connector": "github",
+      "action": "get_issues",
+      "config": {"repo": "owner/repo", "state": "open"},
+      "depends_on": []
+    },
+    {
+      "id": "step_2",
+      "name": "Summarise with AI",
+      "connector": "ai",
+      "action": "summarise",
+      "config": {"prompt": "Summarise this GitHub issue in 2-3 sentences"},
+      "depends_on": ["step_1"]
+    },
+    {
+      "id": "step_3",
+      "name": "Post to Slack",
+      "connector": "slack",
+      "action": "send_message",
+      "config": {"channel": "#dev"},
+      "depends_on": ["step_2"]
+    }
+  ]
+}

@@ -10,107 +10,180 @@
 
 ## What is FlowPilot?
 
-FlowPilot is an open-source, self-hostable workflow automation platform that combines the simplicity of no-code tools with the power of agentic AI. Instead of manually dragging and dropping connectors between services, you simply describe what you want to automate in natural language — and FlowPilot builds the workflow for you.
+FlowPilot is an open-source, self-hostable workflow automation platform that combines natural language with API orchestration. Describe what you want to automate in plain English — FlowPilot decomposes it into an executable workflow graph and runs it.
 
-Think of it as **Zapier meets AI** — but open-source, privacy-first, and running entirely on your infrastructure.
+**Zapier meets AI** — but open-source, privacy-first, and running on your infrastructure.
 
-### Key Features
+## Features
 
-- **Natural Language Workflows** — Describe automations in plain English (e.g., *"When a new issue is created in GitHub, post a summary to Slack and add it to my Notion board"*)
-- **Visual Flow Editor** — Review, edit, and fine-tune AI-generated workflows in an intuitive drag-and-drop UI
-- **100+ Integrations** — Connect to popular services like Slack, GitHub, Notion, Google Sheets, email, databases, and more
-- **Self-Hostable** — Run on your own infrastructure with full control over your data
-- **Extensible Plugin System** — Build custom connectors and actions with a simple plugin API
-- **Event-Driven Architecture** — Trigger workflows from webhooks, schedules (cron), file changes, or API calls
-- **AI Agent Orchestration** — Chain multiple AI agents together within a single workflow
+- **Natural Language Planner** — Describe automations in plain English, get a structured workflow graph
+- **Async Execution Engine** — Parallel node execution, retry logic, dependency resolution
+- **6 Built-in Connectors** — Slack, GitHub, Email, HTTP, Transform, AI (Claude)
+- **10 Workflow Templates** — Pre-built workflows ready to customise
+- **Gradio Dashboard** — Visual UI for creating, executing, and monitoring workflows
+- **CLI** — Full command-line interface for scripting and automation
+- **Webhook Server** — Receive events from external services and trigger workflows
+- **Cron Scheduler** — Schedule workflows on recurring intervals
+- **Workflow Validator** — Catch structural issues before execution (cycles, missing deps, invalid connectors)
+- **Execution History** — SQLite-backed audit log with aggregate statistics
+- **Plugin Architecture** — BaseConnector class for building custom integrations
 
-## Getting Started
-
-### Prerequisites
-
-- Python 3.10+
-- Docker (optional, for containerized deployment)
-
-### Installation
+## Quick Start
 
 ```bash
-# Clone the repository
 git clone https://github.com/cobusgreyling/FlowPilot.git
 cd FlowPilot
-
-# Create a virtual environment
-python -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Start the server
-python -m flowpilot serve
+pip install -e ".[all]"
+export ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-### Docker
+### Create a workflow from natural language
 
 ```bash
-docker pull cobusgreyling/flowpilot:latest
-docker run -p 8080:8080 cobusgreyling/flowpilot:latest
+flowpilot create "When a new GitHub issue is created, summarise it with AI and post to Slack #dev"
 ```
 
-Then open [http://localhost:8080](http://localhost:8080) in your browser.
-
-### Quick Example
-
-Create your first workflow via the CLI:
+### Run a template
 
 ```bash
-flowpilot create "Every morning at 9am, fetch the top 5 Hacker News stories and send them to my Slack channel #news"
+flowpilot run templates/github_to_slack.json
 ```
 
-Or use the Python SDK:
+### Launch the dashboard
+
+```bash
+flowpilot serve
+# Open http://localhost:7860
+```
+
+### Python SDK
 
 ```python
 from flowpilot import FlowPilot
 
 fp = FlowPilot()
 flow = fp.create(
-    "When a new PR is opened in my repo, run the tests and post the result as a comment"
+    "Every morning at 9am, fetch top Hacker News stories and send to Slack #news"
 )
-flow.activate()
+result = fp.run(flow)
+print(result)
 ```
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────┐
-│                 FlowPilot UI                │
-│           (Visual Flow Editor)              │
-├─────────────────────────────────────────────┤
-│              AI Planner Engine              │
-│    (NL → workflow graph translation)        │
-├──────────┬──────────┬───────────────────────┤
-│ Triggers │ Actions  │   Integrations        │
-│ (cron,   │ (API     │   (Slack, GitHub,     │
-│  webhook,│  calls,  │    Notion, Gmail,     │
-│  event)  │  scripts)│    Sheets, DBs...)    │
-├──────────┴──────────┴───────────────────────┤
-│            Execution Engine                 │
-│     (async, retry, logging, monitoring)     │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│               FlowPilot Dashboard (Gradio)          │
+│   Create │ Execute │ Validate │ Templates │ History │
+├─────────────────────────────────────────────────────┤
+│                  CLI (flowpilot)                     │
+│   create │ run │ validate │ list │ history │ serve   │
+├─────────────────────────────────────────────────────┤
+│              AI Planner (Claude / Rules)             │
+│       Natural Language → Workflow Graph (DAG)        │
+├──────────┬──────────┬───────────────────────────────┤
+│ Triggers │ Engine   │   Connectors                  │
+│ ┌──────┐ │ ┌──────┐ │   ┌──────────────────────┐   │
+│ │ Cron │ │ │Async │ │   │ Slack   GitHub  HTTP │   │
+│ │Webhk │ │ │Retry │ │   │ Email   AI   Transform│   │
+│ │Manual│ │ │ DAG  │ │   │ + BaseConnector API   │   │
+│ └──────┘ │ └──────┘ │   └──────────────────────┘   │
+├──────────┴──────────┴───────────────────────────────┤
+│  Validator │ Scheduler │ History (SQLite) │ Webhook  │
+└─────────────────────────────────────────────────────┘
 ```
 
-## Contributing
+## Connectors
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+| Connector | Actions | Auth |
+|-----------|---------|------|
+| **slack** | send_message, read_channel, create_channel | SLACK_BOT_TOKEN or SLACK_WEBHOOK_URL |
+| **github** | get_issues, get_pull_requests, create_issue, create_comment, merge_pr | GITHUB_TOKEN |
+| **email** | send_email, read_inbox | EMAIL_USERNAME + EMAIL_PASSWORD + SMTP_HOST |
+| **http** | get, post, put, delete | Per-request headers |
+| **transform** | filter, map, format_template, extract_field, join | None |
+| **ai** | summarise, classify, extract, generate | ANTHROPIC_API_KEY |
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Without credentials, connectors run in **simulation mode** — the workflow executes but API calls return mock responses.
+
+## Templates
+
+10 pre-built workflow templates in `templates/`:
+
+| Template | Trigger | Description |
+|----------|---------|-------------|
+| github_to_slack | webhook | GitHub issues → AI summary → Slack |
+| daily_news_digest | cron (9am) | Hacker News top stories → Slack |
+| pr_review_notifier | webhook | New PRs → AI review → GitHub comment + Slack |
+| email_to_slack | cron (15min) | Inbox → priority classify → Slack |
+| data_pipeline | cron (6hr) | API fetch → transform → filter → AI analysis |
+| incident_response | webhook | Alert → severity classify → GitHub issue + Slack + email |
+| content_moderation | webhook | Content → AI classify → moderation team |
+| customer_feedback | cron (8am) | Feedback API → sentiment + extraction → Slack |
+| weekly_report | cron (Mon 9am) | GitHub activity → AI summary → Slack + email |
+| multi_channel_broadcast | manual | Message → Slack + email + webhook (parallel) |
+
+## CLI Reference
+
+```bash
+flowpilot create "description"     # Create workflow from natural language
+flowpilot create "desc" -o out.json  # Save to file
+flowpilot create "desc" --save name  # Save to workflows/name.json
+flowpilot run workflow.json        # Execute a workflow
+flowpilot validate workflow.json   # Validate without executing
+flowpilot list                     # List saved workflows and templates
+flowpilot history                  # Show execution history
+flowpilot history --stats          # Show aggregate statistics
+flowpilot serve                    # Launch Gradio dashboard
+flowpilot serve --port 8080        # Custom port
+```
+
+## Building Custom Connectors
+
+```python
+from flowpilot.connectors.base import BaseConnector
+
+class MyConnector(BaseConnector):
+    @property
+    def name(self) -> str:
+        return "my_service"
+
+    def send(self, config: dict, context: dict) -> dict:
+        # Your integration logic here
+        return {"status": "success", "data": result}
+
+# Register with the engine
+engine.register_connector("my_service", MyConnector())
+```
+
+## Project Structure
+
+```
+flowpilot/
+├── __init__.py          # FlowPilot SDK entry point
+├── __main__.py          # python -m flowpilot
+├── engine.py            # Async workflow execution engine
+├── planner.py           # NL → workflow graph (Claude + rules fallback)
+├── validator.py         # Graph validation (cycles, deps, connectors)
+├── scheduler.py         # Cron-based scheduling
+├── history.py           # SQLite execution audit log
+├── webhook.py           # FastAPI webhook trigger server
+├── cli.py               # Command-line interface
+├── ui.py                # Gradio dashboard
+└── connectors/
+    ├── base.py              # BaseConnector ABC
+    ├── slack.py             # Slack (webhook + Bot API)
+    ├── github_connector.py  # GitHub REST API
+    ├── email_connector.py   # SMTP send + IMAP read
+    ├── http_connector.py    # Generic HTTP/REST
+    ├── transform.py         # Data shaping (filter, map, format, extract)
+    └── ai_connector.py      # Claude AI processing
+templates/               # 10 pre-built workflow templates
+```
 
 ## License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ## Contact
 

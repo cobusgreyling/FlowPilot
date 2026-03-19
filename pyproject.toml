@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flowpilot"
+version = "0.1.0"
+description = "AI-Powered Workflow Automation"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [{name = "Cobus Greyling"}]
+dependencies = [
+    "anthropic>=0.39.0",
+]
+
+[project.optional-dependencies]
+ui = ["gradio>=4.0.0", "pandas>=2.0.0"]
+webhooks = ["fastapi>=0.100.0", "uvicorn>=0.20.0"]
+all = ["gradio>=4.0.0", "pandas>=2.0.0", "fastapi>=0.100.0", "uvicorn>=0.20.0"]
+
+[project.scripts]
+flowpilot = "flowpilot.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["flowpilot*"]

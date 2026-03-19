@@ -1,0 +1,43 @@
+{
+  "id": "tpl-010",
+  "name": "Multi-Channel Broadcast",
+  "description": "Take a message and broadcast it to Slack, email, and a webhook simultaneously",
+  "trigger": {
+    "type": "manual",
+    "config": {}
+  },
+  "nodes": [
+    {
+      "id": "step_1",
+      "name": "Format broadcast message",
+      "connector": "ai",
+      "action": "generate",
+      "config": {"prompt": "Format this announcement for professional distribution across multiple channels"},
+      "depends_on": []
+    },
+    {
+      "id": "step_2",
+      "name": "Post to Slack",
+      "connector": "slack",
+      "action": "send_message",
+      "config": {"channel": "#announcements"},
+      "depends_on": ["step_1"]
+    },
+    {
+      "id": "step_3",
+      "name": "Send email",
+      "connector": "email",
+      "action": "send_email",
+      "config": {"to": "team@company.com", "subject": "Announcement"},
+      "depends_on": ["step_1"]
+    },
+    {
+      "id": "step_4",
+      "name": "Push to webhook",
+      "connector": "http",
+      "action": "post",
+      "config": {"url": "https://hooks.example.com/broadcast"},
+      "depends_on": ["step_1"]
+    }
+  ]
+}
