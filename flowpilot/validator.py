@@ -1,12 +1,13 @@
 """Workflow graph validator.
 
 Checks workflow graphs for structural issues before execution:
-cycles, missing dependencies, invalid connectors, empty configs.
+cycles, missing dependencies, invalid connectors, empty configs,
+conditional branching integrity, loop references, and join nodes.
 """
 
 from __future__ import annotations
 
-from flowpilot.engine import WorkflowGraph
+from flowpilot.engine import WorkflowGraph, NodeType
 
 
 KNOWN_CONNECTORS = {
@@ -35,6 +36,10 @@ class WorkflowValidator:
         errors.extend(self._check_cycles(graph))
         errors.extend(self._check_connectors(graph))
         errors.extend(self._check_trigger(graph))
+        errors.extend(self._check_conditions(graph))
+        errors.extend(self._check_loops(graph))
+        errors.extend(self._check_joins(graph))
+        errors.extend(self._check_approvals(graph))
         return errors
 
     def _check_empty(self, graph: WorkflowGraph) -> list[str]:
@@ -91,15 +96,16 @@ class WorkflowValidator:
     def _check_connectors(self, graph: WorkflowGraph) -> list[str]:
         errors = []
         for node in graph.nodes:
+            if not node.connector and node.node_type in (NodeType.CONDITION, NodeType.JOIN, NodeType.APPROVAL):
+                continue  # Control flow nodes may not need connectors
             if node.connector in KNOWN_CONNECTORS:
                 valid_actions = KNOWN_CONNECTORS[node.connector]
-                if node.action not in valid_actions:
+                if node.action and node.action not in valid_actions:
                     errors.append(
                         f"Node '{node.id}': unknown action '{node.action}' "
                         f"for connector '{node.connector}'. "
                         f"Valid actions: {', '.join(valid_actions)}"
                     )
-            # Unknown connectors are warnings, not errors (extensibility)
         return errors
 
     def _check_trigger(self, graph: WorkflowGraph) -> list[str]:
@@ -116,4 +122,54 @@ class WorkflowValidator:
                 config = graph.trigger.get("config", {})
                 if not config.get("schedule"):
                     errors.append("Cron trigger requires a 'schedule' in config")
+        return errors
+
+    def _check_conditions(self, graph: WorkflowGraph) -> list[str]:
+        """Validate conditional branch nodes."""
+        errors = []
+        node_ids = {n.id for n in graph.nodes}
+        for node in graph.nodes:
+            if node.node_type == NodeType.CONDITION:
+                if not node.condition:
+                    errors.append(f"Condition node '{node.id}' has no condition defined")
+                if node.on_true and node.on_true not in node_ids:
+                    errors.append(f"Condition '{node.id}' on_true references '{node.on_true}' which does not exist")
+                if node.on_false and node.on_false not in node_ids:
+                    errors.append(f"Condition '{node.id}' on_false references '{node.on_false}' which does not exist")
+                if not node.on_true and not node.on_false:
+                    errors.append(f"Condition '{node.id}' has neither on_true nor on_false path defined")
+        return errors
+
+    def _check_loops(self, graph: WorkflowGraph) -> list[str]:
+        """Validate loop/iterator nodes."""
+        errors = []
+        for node in graph.nodes:
+            if node.node_type == NodeType.LOOP:
+                if not node.iterate_over:
+                    errors.append(f"Loop node '{node.id}' has no iterate_over field")
+                if not node.connector and not node.loop_body:
+                    errors.append(f"Loop node '{node.id}' needs either a connector/action or a loop_body reference")
+        return errors
+
+    def _check_joins(self, graph: WorkflowGraph) -> list[str]:
+        """Validate join nodes."""
+        errors = []
+        node_ids = {n.id for n in graph.nodes}
+        for node in graph.nodes:
+            if node.node_type == NodeType.JOIN:
+                sources = node.join_from or node.depends_on
+                if len(sources) < 2:
+                    errors.append(f"Join node '{node.id}' should merge at least 2 branches")
+                for src in node.join_from:
+                    if src not in node_ids:
+                        errors.append(f"Join node '{node.id}' references '{src}' which does not exist")
+        return errors
+
+    def _check_approvals(self, graph: WorkflowGraph) -> list[str]:
+        """Validate approval gate nodes."""
+        errors = []
+        for node in graph.nodes:
+            if node.node_type == NodeType.APPROVAL:
+                if not node.approval_message and not node.name:
+                    errors.append(f"Approval node '{node.id}' has no message or name")
         return errors

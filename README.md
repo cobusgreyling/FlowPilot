@@ -16,17 +16,36 @@ FlowPilot is an open-source, self-hostable workflow automation platform that com
 
 ## Features
 
+### Core
 - **Natural Language Planner** — Describe automations in plain English, get a structured workflow graph
 - **Async Execution Engine** — Parallel node execution, retry logic, dependency resolution
-- **6 Built-in Connectors** — Slack, GitHub, Email, HTTP, Transform, AI (Claude)
+- **8 Built-in Connectors** — Slack, GitHub, Email, HTTP, Transform, AI, Notification, Database
 - **10 Workflow Templates** — Pre-built workflows ready to customise
-- **Gradio Dashboard** — Visual UI for creating, executing, and monitoring workflows
+- **Gradio Dashboard** — Visual UI with Mermaid graph rendering, live execution streaming, and monitoring
 - **CLI** — Full command-line interface for scripting and automation
-- **Webhook Server** — Receive events from external services and trigger workflows
-- **Cron Scheduler** — Schedule workflows on recurring intervals
-- **Workflow Validator** — Catch structural issues before execution (cycles, missing deps, invalid connectors)
-- **Execution History** — SQLite-backed audit log with aggregate statistics
 - **Plugin Architecture** — BaseConnector class for building custom integrations
+
+### Advanced Node Types
+- **Conditional Branching** — If/else nodes that route execution based on field evaluation
+- **Loop/Iterator Nodes** — Process list items one-by-one with per-item execution
+- **Join Nodes** — Merge results from parallel branches before continuing
+- **Approval Gates** — Human-in-the-loop nodes that pause execution until approved
+
+### Infrastructure
+- **Webhook Server** — Receive events from external services with response mode support
+- **Cron Scheduler** — Schedule workflows on recurring intervals
+- **Dry Run Mode** — Simulate execution without making real API calls
+- **Live Execution Streaming** — Real-time node status updates during execution
+- **Visual Graph Renderer** — Mermaid.js DAG diagrams with status colour coding
+
+### Operations
+- **Workflow Validator** — Catches cycles, missing deps, invalid connectors, broken conditions, and loop issues
+- **Execution History** — SQLite-backed audit log with aggregate statistics
+- **Secrets Vault** — Encrypted credential storage (Fernet) replacing raw environment variables
+- **Workflow Versioning** — Track changes, diff between versions, rollback
+- **SLA Tracking** — Error budget monitoring with breach alerts per workflow
+- **Rate Limiter** — Per-connector sliding window rate limiting
+- **Workflow Marketplace** — Discover, publish, rate, and install community templates
 
 ## Quick Start
 
@@ -103,8 +122,20 @@ print(result)
 | **http** | get, post, put, delete | Per-request headers |
 | **transform** | filter, map, format_template, extract_field, join | None |
 | **ai** | summarise, classify, extract, generate | ANTHROPIC_API_KEY |
+| **notification** | send_notification (desktop, sms, webhook) | TWILIO_* for SMS |
+| **database** | query, insert, update | DATABASE_URL |
 
 Without credentials, connectors run in **simulation mode** — the workflow executes but API calls return mock responses.
+
+## Node Types
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| **standard** | Normal connector execution | API calls, data processing |
+| **condition** | If/else branching | Route based on sentiment, priority, status |
+| **loop** | Iterate over a list | Process each issue, email, or record |
+| **join** | Merge parallel branches | Combine results before next step |
+| **approval** | Human-in-the-loop gate | Require sign-off before deployment |
 
 ## Templates
 
@@ -126,16 +157,31 @@ Without credentials, connectors run in **simulation mode** — the workflow exec
 ## CLI Reference
 
 ```bash
-flowpilot create "description"     # Create workflow from natural language
-flowpilot create "desc" -o out.json  # Save to file
-flowpilot create "desc" --save name  # Save to workflows/name.json
-flowpilot run workflow.json        # Execute a workflow
-flowpilot validate workflow.json   # Validate without executing
-flowpilot list                     # List saved workflows and templates
-flowpilot history                  # Show execution history
-flowpilot history --stats          # Show aggregate statistics
-flowpilot serve                    # Launch Gradio dashboard
-flowpilot serve --port 8080        # Custom port
+# Workflow management
+flowpilot create "description"          # Create workflow from natural language
+flowpilot create "desc" -o out.json     # Save to file
+flowpilot create "desc" --save name     # Save to workflows/name.json
+flowpilot run workflow.json             # Execute a workflow
+flowpilot run workflow.json --dry-run   # Simulate without real API calls
+flowpilot validate workflow.json        # Validate without executing
+flowpilot graph workflow.json           # Generate Mermaid diagram
+flowpilot list                          # List saved workflows and templates
+
+# Operations
+flowpilot history                       # Show execution history
+flowpilot history --stats               # Show aggregate statistics
+flowpilot sla                           # View SLA status and error budgets
+flowpilot sla --set WF_ID "Name" 99.5  # Set SLA target
+
+# Secrets
+flowpilot secrets set SLACK_TOKEN xoxb-...  # Store encrypted credential
+flowpilot secrets get SLACK_TOKEN           # Retrieve credential
+flowpilot secrets list                      # List stored keys
+flowpilot secrets delete SLACK_TOKEN        # Remove credential
+
+# Dashboard
+flowpilot serve                         # Launch Gradio dashboard
+flowpilot serve --port 8080             # Custom port
 ```
 
 ## Building Custom Connectors
@@ -160,16 +206,21 @@ engine.register_connector("my_service", MyConnector())
 
 ```
 flowpilot/
-├── __init__.py          # FlowPilot SDK entry point
+├── __init__.py          # FlowPilot SDK entry point (v0.2.0)
 ├── __main__.py          # python -m flowpilot
-├── engine.py            # Async workflow execution engine
+├── engine.py            # Async engine (parallel, conditional, loop, join, approval, dry run, streaming)
 ├── planner.py           # NL → workflow graph (Claude + rules fallback)
-├── validator.py         # Graph validation (cycles, deps, connectors)
+├── validator.py         # Graph validation (cycles, deps, conditions, loops, joins, approvals)
 ├── scheduler.py         # Cron-based scheduling
 ├── history.py           # SQLite execution audit log
-├── webhook.py           # FastAPI webhook trigger server
-├── cli.py               # Command-line interface
-├── ui.py                # Gradio dashboard
+├── secrets.py           # Fernet-encrypted credential vault
+├── versioning.py        # Workflow version control with diff and rollback
+├── sla.py               # Error budget and SLA tracking
+├── rate_limiter.py      # Per-connector sliding window rate limiter
+├── marketplace.py       # Workflow template marketplace
+├── webhook.py           # FastAPI webhook server with response mode
+├── cli.py               # CLI (create, run, validate, graph, secrets, sla, history, serve)
+├── ui.py                # Gradio dashboard with Mermaid graphs and live streaming
 └── connectors/
     ├── base.py              # BaseConnector ABC
     ├── slack.py             # Slack (webhook + Bot API)
@@ -177,7 +228,9 @@ flowpilot/
     ├── email_connector.py   # SMTP send + IMAP read
     ├── http_connector.py    # Generic HTTP/REST
     ├── transform.py         # Data shaping (filter, map, format, extract)
-    └── ai_connector.py      # Claude AI processing
+    ├── ai_connector.py      # Claude AI processing
+    ├── notification.py      # Desktop, SMS (Twilio), webhook notifications
+    └── database.py          # SQLite + PostgreSQL read/write
 templates/               # 10 pre-built workflow templates
 ```
 

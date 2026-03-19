@@ -3,3 +3,4 @@ gradio>=4.0.0
 pandas>=2.0.0
 fastapi>=0.100.0
 uvicorn>=0.20.0
+cryptography>=41.0.0

@@ -7,3 +7,5 @@ from flowpilot.connectors.email_connector import EmailConnector
 from flowpilot.connectors.http_connector import HttpConnector
 from flowpilot.connectors.transform import TransformConnector
 from flowpilot.connectors.ai_connector import AIConnector
+from flowpilot.connectors.notification import NotificationConnector
+from flowpilot.connectors.database import DatabaseConnector

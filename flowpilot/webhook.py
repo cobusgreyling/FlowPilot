@@ -49,6 +49,7 @@ class WebhookServer:
         handler: Callable,
         secret: str | None = None,
         name: str = "",
+        response_mode: bool = False,
     ) -> str:
         """Register a webhook endpoint.
 
@@ -57,6 +58,7 @@ class WebhookServer:
             handler: Callback function(payload: dict) -> dict
             secret: Optional HMAC secret for signature verification
             name: Human-readable name for this webhook
+            response_mode: If True, return workflow output as the HTTP response
         """
         route_id = str(uuid.uuid4())[:8]
         self._routes[path] = WebhookRoute(
@@ -65,6 +67,7 @@ class WebhookServer:
             handler=handler,
             secret=secret,
             name=name or path.strip("/"),
+            response_mode=response_mode,
         )
         return route_id
 
@@ -129,6 +132,8 @@ class WebhookServer:
                 result = route.handler(payload)
                 event["status"] = "success"
                 self._event_log.append(event)
+                if route.response_mode:
+                    return JSONResponse(result if isinstance(result, dict) else {"result": result})
                 return JSONResponse({"status": "ok", "result": result})
             except Exception as e:
                 event["status"] = "error"
@@ -161,10 +166,12 @@ class WebhookRoute:
         handler: Callable,
         secret: str | None = None,
         name: str = "",
+        response_mode: bool = False,
     ):
         self.route_id = route_id
         self.path = path
         self.handler = handler
         self.secret = secret
         self.name = name
+        self.response_mode = response_mode
         self.hit_count = 0
