@@ -83,6 +83,15 @@ def main():
     sla_p = subparsers.add_parser("sla", help="View SLA status and error budgets")
     sla_p.add_argument("--set", nargs=3, metavar=("WORKFLOW_ID", "NAME", "TARGET_PCT"), help="Set SLA target")
 
+    # report
+    report_p = subparsers.add_parser("report", help="Generate execution reports")
+    report_p.add_argument("type", choices=["summary", "connectors", "sla", "full"], help="Report type")
+    report_p.add_argument("--days", type=int, default=7, help="Report period in days (default 7)")
+    report_p.add_argument("--format", choices=["markdown", "json", "csv"], default="markdown", help="Output format")
+    report_p.add_argument("-o", "--output", help="Export to file path")
+    report_p.add_argument("--deliver", choices=["slack", "email", "file"], help="Deliver via channel")
+    report_p.add_argument("--channel", help="Delivery target (Slack channel, email address, or file path)")
+
     # graph
     graph_p = subparsers.add_parser("graph", help="Generate Mermaid diagram for a workflow")
     graph_p.add_argument("file", help="Workflow JSON file path")
@@ -101,6 +110,7 @@ def main():
         "history": cmd_history,
         "secrets": cmd_secrets,
         "sla": cmd_sla,
+        "report": cmd_report,
         "graph": cmd_graph,
         "serve": cmd_serve,
     }
@@ -313,6 +323,49 @@ def cmd_sla(args):
         print("─" * 70)
         for a in alerts:
             print(f"  {a}")
+
+
+def cmd_report(args):
+    from flowpilot.reporting import ReportGenerator
+    gen = ReportGenerator()
+
+    report_types = {
+        "summary": gen.execution_summary,
+        "connectors": gen.connector_usage,
+        "sla": gen.sla_compliance,
+        "full": gen.full_report,
+    }
+
+    report = report_types[args.type](days=args.days)
+
+    # Deliver via channel
+    if args.deliver:
+        config = {}
+        if args.deliver == "slack":
+            config["channel"] = args.channel or "#reports"
+        elif args.deliver == "email":
+            config["to"] = args.channel or ""
+        elif args.deliver == "file":
+            config["path"] = args.channel or f"reports/{args.type}_report.md"
+            config["format"] = args.format
+
+        result = gen.deliver(report, args.deliver, config)
+        print(f"Delivered via {args.deliver}: {result}")
+        return
+
+    # Export to file
+    if args.output:
+        gen.export(report, args.output, args.format)
+        print(f"Exported to {args.output} ({args.format})")
+        return
+
+    # Print to stdout
+    if args.format == "json":
+        print(report.to_json())
+    elif args.format == "csv":
+        print(report.to_csv())
+    else:
+        print(report.to_markdown())
 
 
 def cmd_graph(args):

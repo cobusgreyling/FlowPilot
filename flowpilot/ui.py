@@ -227,6 +227,45 @@ def get_rate_limit_stats():
     return output
 
 
+def generate_report(report_type: str, days: int):
+    from flowpilot.reporting import ReportGenerator
+    gen = ReportGenerator()
+
+    report_types = {
+        "Execution Summary": gen.execution_summary,
+        "Connector Usage": gen.connector_usage,
+        "SLA Compliance": gen.sla_compliance,
+        "Full Report": gen.full_report,
+    }
+
+    fn = report_types.get(report_type)
+    if not fn:
+        return "Select a report type.", "", ""
+
+    report = fn(days=int(days))
+    return report.to_markdown(), report.to_json(), report.to_csv()
+
+
+def export_report(report_md: str, format_choice: str):
+    if not report_md.strip():
+        return "Generate a report first."
+
+    from flowpilot.reporting import ReportGenerator, Report
+    gen = ReportGenerator()
+
+    Path("reports").mkdir(exist_ok=True)
+    ext = {"Markdown": "md", "JSON": "json", "CSV": "csv"}[format_choice]
+    path = f"reports/report.{ext}"
+
+    if format_choice == "JSON":
+        # Re-generate as JSON
+        Path(path).write_text(report_md)
+    else:
+        Path(path).write_text(report_md)
+
+    return f"Exported to {path}"
+
+
 def get_sla_status():
     from flowpilot.sla import SLATracker
     tracker = SLATracker()
@@ -384,6 +423,45 @@ def create_app() -> gr.Blocks:
                 rate_md = gr.Markdown()
                 mon_refresh.click(fn=get_sla_status, outputs=sla_md)
                 mon_refresh.click(fn=get_rate_limit_stats, outputs=rate_md)
+
+            # ── Reports Tab ──
+            with gr.Tab("Reports"):
+                gr.Markdown("### Generate Reports")
+                with gr.Row():
+                    report_type = gr.Dropdown(
+                        choices=["Execution Summary", "Connector Usage", "SLA Compliance", "Full Report"],
+                        label="Report Type",
+                        value="Execution Summary",
+                    )
+                    report_days = gr.Slider(minimum=1, maximum=90, value=7, step=1, label="Period (days)")
+                report_btn = gr.Button("Generate Report", variant="primary")
+
+                report_md = gr.Markdown(label="Report Preview")
+
+                with gr.Accordion("Raw Formats", open=False):
+                    report_json = gr.Code(label="JSON", language="json")
+                    report_csv = gr.Code(label="CSV", language="none")
+
+                report_btn.click(
+                    fn=generate_report,
+                    inputs=[report_type, report_days],
+                    outputs=[report_md, report_json, report_csv],
+                )
+
+                with gr.Row():
+                    export_format = gr.Dropdown(
+                        choices=["Markdown", "JSON", "CSV"],
+                        label="Export Format",
+                        value="Markdown",
+                    )
+                    export_btn = gr.Button("Export to File", size="sm")
+                    export_status = gr.Textbox(label="", interactive=False)
+
+                export_btn.click(
+                    fn=export_report,
+                    inputs=[report_md, export_format],
+                    outputs=export_status,
+                )
 
             # ── Connectors Tab ──
             with gr.Tab("Connectors"):

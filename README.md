@@ -45,6 +45,7 @@ FlowPilot is an open-source, self-hostable workflow automation platform that com
 - **Workflow Versioning** — Track changes, diff between versions, rollback
 - **SLA Tracking** — Error budget monitoring with breach alerts per workflow
 - **Rate Limiter** — Per-connector sliding window rate limiting
+- **Reporting** — Execution summaries, connector usage, SLA compliance reports with Markdown/JSON/CSV export and delivery via Slack, email, or file
 - **Workflow Marketplace** — Discover, publish, rate, and install community templates
 
 ## Quick Start
@@ -92,8 +93,8 @@ print(result)
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│               FlowPilot Dashboard (Gradio)          │
-│   Create │ Execute │ Validate │ Templates │ History │
+│               FlowPilot Dashboard (Gradio)               │
+│ Create │ Execute │ Validate │ Templates │ History │ Reports│
 ├─────────────────────────────────────────────────────┤
 │                  CLI (flowpilot)                     │
 │   create │ run │ validate │ list │ history │ serve   │
@@ -173,6 +174,14 @@ flowpilot history --stats               # Show aggregate statistics
 flowpilot sla                           # View SLA status and error budgets
 flowpilot sla --set WF_ID "Name" 99.5  # Set SLA target
 
+# Reporting
+flowpilot report summary                   # Execution summary (last 7 days)
+flowpilot report connectors --days 30      # Connector usage report
+flowpilot report sla                       # SLA compliance report
+flowpilot report full --format json        # Full report as JSON
+flowpilot report summary -o report.md      # Export to file
+flowpilot report full --deliver slack --channel "#ops"  # Send to Slack
+
 # Secrets
 flowpilot secrets set SLACK_TOKEN xoxb-...  # Store encrypted credential
 flowpilot secrets get SLACK_TOKEN           # Retrieve credential
@@ -219,8 +228,9 @@ flowpilot/
 ├── rate_limiter.py      # Per-connector sliding window rate limiter
 ├── marketplace.py       # Workflow template marketplace
 ├── webhook.py           # FastAPI webhook server with response mode
-├── cli.py               # CLI (create, run, validate, graph, secrets, sla, history, serve)
-├── ui.py                # Gradio dashboard with Mermaid graphs and live streaming
+├── reporting.py         # Execution reports, connector usage, SLA compliance, export/delivery
+├── cli.py               # CLI (create, run, validate, graph, secrets, sla, report, history, serve)
+├── ui.py                # Gradio dashboard with Mermaid graphs, live streaming, and reports
 └── connectors/
     ├── base.py              # BaseConnector ABC
     ├── slack.py             # Slack (webhook + Bot API)

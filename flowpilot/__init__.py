@@ -9,6 +9,7 @@ from flowpilot.versioning import WorkflowVersionStore
 from flowpilot.sla import SLATracker
 from flowpilot.rate_limiter import RateLimiter
 from flowpilot.marketplace import WorkflowMarketplace
+from flowpilot.reporting import ReportGenerator
 from flowpilot.connectors.base import BaseConnector
 
 __version__ = "0.2.0"
@@ -26,6 +27,7 @@ class FlowPilot:
         self.sla = SLATracker(db_path)
         self.rate_limiter = RateLimiter()
         self.marketplace = WorkflowMarketplace(db_path)
+        self.reports = ReportGenerator(db_path)
 
         self.engine.set_rate_limiter(self.rate_limiter)
 
