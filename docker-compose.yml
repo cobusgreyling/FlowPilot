@@ -1,0 +1,24 @@
+services:
+  flowpilot:
+    build: .
+    ports:
+      - "7860:7860"
+      - "8000:8000"
+    environment:
+      - FLOWPILOT_ENV=production
+      - FLOWPILOT_HOST=0.0.0.0
+      - FLOWPILOT_PORT=7860
+      - FLOWPILOT_AUTH_ENABLED=true
+      - FLOWPILOT_ADMIN_PASSWORD=${FLOWPILOT_ADMIN_PASSWORD:-admin}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+    volumes:
+      - flowpilot-data:/app/data
+      - ./workflows:/app/workflows
+      - ./templates:/app/templates
+      - ./config:/app/config
+    restart: unless-stopped
+
+volumes:
+  flowpilot-data:

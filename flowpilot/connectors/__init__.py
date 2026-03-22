@@ -9,3 +9,9 @@ from flowpilot.connectors.transform import TransformConnector
 from flowpilot.connectors.ai_connector import AIConnector
 from flowpilot.connectors.notification import NotificationConnector
 from flowpilot.connectors.database import DatabaseConnector
+from flowpilot.connectors.google_workspace import GoogleWorkspaceConnector
+from flowpilot.connectors.jira_connector import JiraConnector
+from flowpilot.connectors.aws_connector import AWSConnector
+from flowpilot.connectors.stripe_connector import StripeConnector
+from flowpilot.connectors.twilio_connector import TwilioConnector
+from flowpilot.connectors.postgres_connector import PostgresConnector
